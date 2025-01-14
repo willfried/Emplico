@@ -16,3 +16,7 @@ The program has two level of difficulty :<br>
 * 1st level : the program is choosing the cell offering the highest amount of points<br>
 * 2nd level : the program is choosing the cell offering the highest amout of points, and not allowing the human player to collect more points at the next turn<br>
 
+I did the game as a kind of challenge, I think I reached my objective, and there is a lot to do to turn it in a addictive game :
+<ul>
+  <LI>aa</LI>
+</ul>
