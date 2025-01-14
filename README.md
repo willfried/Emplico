@@ -22,7 +22,7 @@ I did the game as a kind of challenge, I think I reached my objective, and there
 * add random bonus appearing on cells
 * unlock the game with new cells when the game is blocked
 
-You can try it <a href="http://www.fridou.com/perso/emplico/emplico.html">there</a>
+You can try it <a href="http://www.fridou.com/perso/emplico/emplico.html" target="_blank">there</a>
 
 I don't think html5 is the right language for all these improvements.
 A migration on Android or iOS?
