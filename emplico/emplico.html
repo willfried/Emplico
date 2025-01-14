@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+
+<!-- 
+Jeu Emplico / Emplico game
+
+Emplico = Empty lines and columns
+
+TODO :
+- evo : traductions (add german / english translations)
+- evo : ajout de bruitage
+
+Testé avec :
+WIN XP :
+- Firefox 25.0.1
+- Opera 18.0.1
+- 
+
+-->
+
+<html>
+<head><title>Emplico, a HTML5 game</title>
+<meta charset="utf-8">
+<link href="./css/emplico.css" rel="stylesheet" type="text/css">
+
+<head>
+<!-- excanvas pour compatibilité avec IE8 -->
+<!--[if IE]><script type="text/javascript" src="./js/excanvas.js"></script><![endif]-->
+</head>
+<!-- le jeu utilise jQuery / the game uses jQuery-->
+<script type="text/javascript" src="./jquery/jquery-1.9.1.js"></script>
+<!-- jquery ui pour les boites de dialogue -->
+
+<!-- objets nécessaires au jeu / loading of necessary objetcs -->
+<script type="text/javascript" src="./js/emplico_objects.js"></script>
+<!-- fonctions de dessin  / draw game dedicated functions -->
+<script type="text/javascript" src="./js/emplico_paintfunctions.js"></script>
+<!-- fonctions ia du jeu / ia game dedicated functions -->
+<script type="text/javascript" src="./js/emplico_functions.js"></script>
+<!-- fonctins génériques / generic functions (not game dedicated) -->
+<script type="text/javascript" src="./js/generic_functions.js"></script>
+
+<script type="text/javascript">
+
+// -----------------------------------------------------------------------------
+// --- variables globales
+// -----------------------------------------------------------------------------
+
+//objet plateau de jeu
+var board;
+//objets tableau de Case
+var caseArray;
+//objet context de dessin
+var context;
+
+//etat du jeu
+var states = {
+    BEGINNING : 0,
+    PLAYING : 1,
+    HUMANVICTORY : 2,
+    COMPUTERVICTORY : 3,
+    BLOCKED : 4
+};
+
+/**
+* Function initCaseArray
+* Initialisation des valeurs des points des cases du plateau
+* 
+* @return rien
+*/  
+function initCaseArray(){
+  
+  var DEBUG = false;
+  
+  traceToConsole("initCaseArray dcy", DEBUG);
+  caseArray = create2DArray(board.size);
+
+  var iTemp;
+  var sDebug = "";
+  for (var col=0; col<board.colAmount; col++){
+    for (var row=0; row<board.rowAmount; row++){
+      iTemp = randomValueOneToNine();
+      caseArray[col][row]=new Case(iTemp, col, row);
+      board.pointsOnBoard += iTemp;
+      sDebug = sDebug + iTemp + " . ";
+    };
+    traceToConsole("colonne " + (col) + " = " + sDebug, DEBUG);
+    sDebug = ""; 
+  };
+  traceToConsole("initCaseArray end", DEBUG);
+  //victoire à la moitié des points moins un (pour éviter les blocages)
+  board.scoreToReachToWin = Math.floor( board.pointsOnBoard / 2 );
+}
+
+/**
+* Function initBoard
+* Initialisation de board (scores à zero ...)
+* 
+* @return rien
+*/ 
+function initBoard(){
+  board.computerScore=0;
+  board.humanScore=0;
+  board.pointsOnBoard=0;
+  board.lastPlayedCase=null;
+  board.state=states.PLAYING;
+}
+
+
+// ----------------------------------------------------------------------------
+// --- corps du jeu 
+// ----------------------------------------------------------------------------
+$(
+  document).ready(function() {
+  var canvas = $("#gameCanvas");
+  context = canvas.get(0).getContext("2d");
+  // Canvas dimensions
+  var canvasWidth = canvas.width();
+  var canvasHeight = canvas.height();
+  
+  var gameUI = $("#gameUI");
+  
+  //panneau introductif
+  var introDialog = $("#introDialog");
+  //bouton pour jouer
+  var playBtn = $("#playBtn");
+  //bouton pour avoir les options
+  var optnBtn = $("#optnBtn");
+  //bouton pour ouvrir le dialogue des regles
+  var rulzBtn = $("#rulzBtn");
+  
+  //panneau d'options
+  var optionsDialog = $("#optionsDialog");
+  //bouton pour fermer le panneau d'options
+  var validateOptnBtn = $("#validateOptnBtn");
+
+  //dialogue des règles
+  var rulesDialog = $( "#rulesDialog" )
+  //bouton pour fermer le dialogue des regles
+  var okRulzBtn = $("#okRulzBtn");
+  
+  //panneau de score
+  var scoreBoard = $("#scoreBoard");
+  //var overStatus = $(".overStatus");
+  var humanScore = $("#humanScore");
+  var computerScore = $("#computerScore");
+  var victoryScore = $("#victoryScore");
+  var uiStatus = $(".boardStatus");
+  var uiMessage=$(".boardMessage");
+  var exitBtn = $("#exitBtn");
+  var replayBtn = $("#replayBtn");
+  
+  //taille du plateau
+  var size;
+  //difficulté du jeu
+  var difficulty;
+  
+/**
+* Function clic sur le canvas
+* Tourne en permanence, mais les conséquences sont fonctions 
+* 
+* @return rien
+*/ 
+  canvas.click(function(e) {
+  
+    var DEBUG = false;
+    
+    if ( board.isGameStarted && ! board.computerPlays){
+      //si le jeu est démarré et si c'est au joueur de jouer
+      
+      var canvasOffset = canvas.offset();
+      var canvasX = Math.floor(e.pageX-canvasOffset.left);
+      var canvasY = Math.floor(e.pageY-canvasOffset.top);
+      
+      var playedCol = Math.floor( canvasX / (board.width  / board.colAmount) );
+      var playedRow = Math.floor( canvasY / (board.height / board.rowAmount) );
+      
+      if ( board.lastPlayedCase == null || ( board.lastPlayedCase.col == playedCol || board.lastPlayedCase.row == playedRow ) ) {
+        // si lastPlayedCase non null et lastPlayedCase.col != playedCol et lastPlayedCase.row != playedRow  
+            
+        var tempCase = caseArray[playedCol][playedRow];
+        
+        if (tempCase.isPlayedByComputer || tempCase.isPlayedByHuman){
+          //case déja joué par human
+          traceToConsole("canvas.click, case already played in "+playedCol+","+playedRow, DEBUG);
+        } else {
+          //case jouable
+          traceToConsole("canvas.click : human plays "  + tempCase.points + " points on " + tempCase.col + "," + tempCase.row , DEBUG);
+          board.lastPlayedCase=tempCase;
+          caseArray[playedCol][playedRow].isPlayedByHuman=true;
+          board.humanScore += caseArray[playedCol][playedRow].points;
+          board.computerPlays = true;
+        }
+          
+      } else {
+        traceToConsole("canvas.click : human can't play on " + playedCol + "," + playedRow + " (allowed are col " + board.lastPlayedCase.col + " and row " + board.lastPlayedCase.row +")", DEBUG );
+      } // end si lastPlayedCase non null et ...     
+
+    } // end if ( board.isGameStarted && ! board.computerPlays){
+    
+  }); // end canvas.click
+
+  // --------------------------------------------------------------------------
+  // process du jeu
+  function processGame() {
+
+    var DEBUG=false;
+
+    victoryScore.html(board.scoreToReachToWin);
+    humanScore.html(board.humanScore);
+    computerScore.html(board.computerScore);
+    uiMessage.html("");
+    
+
+    //est ce que le joueur a atteint les points à atteindre
+    if ( board.humanScore >= board.scoreToReachToWin ){
+      board.isGameStarted = false;
+      //mise à jour scoreBoard
+      uiStatus.html("Gagné !");
+      humanScore.html(board.humanScore);
+      uiMessage.html("Jour a atteint " + board.scoreToReachToWin + " points.")
+            
+      traceToConsole("processGame : human victory " + board.humanScore + " >=" + board.scoreToReachToWin, true );
+      board.computerPlays = false;
+      board.state=states.HUMANVICTORY;
+    } else {
+      traceToConsole("processGame : humanScore (=" + board.humanScore + ") <" + board.scoreToReachToWin, DEBUG );    
+    }  
+    //est ce que l'IA a atteint les points à atteindre
+    if ( board.computerScore >= board.scoreToReachToWin ){
+      board.isGameStarted = false;
+      //mise à jour scoreBoard
+      uiStatus.html("Non, c'est perdu!");
+      humanScore.html(board.humanScore);
+      computerScore.html(board.computerScore);
+      uiMessage.html("Ordi a atteint " + board.scoreToReachToWin + " points.")
+
+      board.computerPlays = true;
+      board.state=states.COMPUTERVICTORY;
+      traceToConsole("processGame : computer victory " + board.computerScore + " >=" + board.scoreToReachToWin, DEBUG );
+    } else {
+      traceToConsole("processGame : computerScore (=" + board.computerScore + ") <" + board.scoreToReachToWin, DEBUG );
+    }
+    
+    //si le jeu n'est pas terminé (victoire ...) est ce que le jeu est bloqué ?
+    if ( board.isGameStarted ){
+      if ( isGameBlocked() ){
+        board.isGameStarted = false;
+        board.state=states.BLOCKED;
+        //mise à jour scoreBoard
+        uiStatus.html("Le jeu est bloqué.");
+        humanScore.html(board.humanScore);
+        computerScore.html(board.computerScore);
+
+        if ( board.computerScore>board.humanScore ){
+           board.computerPlays = true;
+           traceToConsole("processGame : game is blocked but computer has bigger score ", DEBUG );
+           uiMessage.html("L'adversaire démarrera la nouvelle partie.");
+        } else  {
+          board.computerPlays = false;
+          traceToConsole("processGame : game is blocked but human has bigger score ", DEBUG );
+          uiMessage.html("Vous démarrerez la nouvelle partie.");
+        }
+      } // end if isGameBlocked
+      
+      else if ( board.computerPlays  ) {
+          uiStatus.html("Ordi va jouer");
+          makeComputerPlaysAtLevel(difficulty);
+      } else {
+          uiStatus.html("A vous de jouer" );
+      }
+
+    }
+    paintBoard();
+  } //end if ( board.computerPlays ) 
+  
+  // Reset and start the game
+  function startGame() {
+
+    var DEBUG = false;
+
+    traceToConsole("startGame dcy", DEBUG);
+  // Set up initial game settings
+    initBoard();    
+    initCaseArray();
+    scoreBoard.show();
+    board.isGameStarted = true;
+    // Start the animation loop
+    animate();
+  };
+
+  // Initialize the game environment
+  function init() {
+    
+    //cacher le dialogue des règles, des options, de fin de jeu, et le panneau de score  
+    scoreBoard.hide();
+    optionsDialog.hide();
+    rulesDialog.hide();
+    introDialog.show();
+    
+    optnBtn.click(function(e) {
+      // clic sur le bouton options
+      e.preventDefault();
+      introDialog.hide();
+      optionsDialog.show();
+    });
+
+    validateOptnBtn.click(function(e) {
+      // clic sur le valider les options
+      e.preventDefault();
+      introDialog.show();
+      optionsDialog.hide();
+    });
+
+    
+    rulzBtn.click(function(e) {
+      // clic sur le bouton règles
+      e.preventDefault();
+      introDialog.hide();
+      rulesDialog.show();
+    });
+    
+    okRulzBtn.click(function(e) {
+      // clic sur le bouton OK (dans le dialogue des regles)
+      e.preventDefault();
+      introDialog.show();
+      rulesDialog.hide();
+    });
+
+    exitBtn.click(function(e) {
+      // clic sur le bouton OK (dans le dialogue des regles)
+      e.preventDefault();
+      scoreBoard.hide();
+      canvas.hide();
+      gameUI.show();
+      introDialog.show();
+    });
+
+    playBtn.click(function(e) {
+      // clic sur le bouton jouer
+      e.preventDefault();
+      introDialog.hide();
+      gameUI.hide();
+      canvas.show();
+      //recup taille dans le select
+      size = $( "#sizeSelector" ).val();
+      difficulty = $( "#difficultySelector" ).val();
+      board = new Board (size, canvasWidth, canvasHeight);
+      board.isGameStarted=false;
+      startGame();
+    });
+    
+    replayBtn.click(function(e) {
+      //clic sur le bouton rejouer
+      e.preventDefault();
+      //scoreBoard.show();
+      startGame();
+    });
+  
+  }; // -- end init --
+
+  // Animation loop that does all the fun stuff
+  function animate() {
+    //console.log("animate dcy");
+    if (board.isGameStarted) {
+      processGame();      
+      // Run the animation loop again in 33 milliseconds
+      setTimeout(animate, 333);
+    };
+    //console.log("animate end");
+  }; // -- end animate --
+  
+  init();
+
+}); // -- end document.ready function
+
+</script>
+</head>
+<body bgcolor="#EEEEEE">
+
+  <!-- un div 'game' de 400 x 600, 20 du haut, centré -->
+  <div id="game">
+  
+    <!-- debut gameUI -->
+    <div id="gameUI">
+  
+      <!-- panneau d'intro : 3 boutons : jouer, options, règles --->
+      <div id="introDialog" class="dialogue">
+        
+        <p>
+          <h1>Emplico</h1>
+        </p>  
+        
+        <p>
+          Empty lines and columns (emp-li-co) in a grid,<br/> 
+          to collect more points than the opponent.<br/>
+          Each one has to play a case on the same column <br/>or same line as the last playe case,<br/> to collect the case points. 
+        </p>
+
+        <p>
+          Un jeu ou on ramasse les points sur la même colonne ou ligne que la case jouée par l'adversaire.
+        </p>
+
+        <p>&nbsp;</p>
+        
+        <p>
+        <a id="playBtn" class="button" href="#">Jouer</a>
+        <a id="optnBtn" class="button" href="#">Option</a>
+        <a id="rulzBtn" class="button" href="#">Règle</a>
+        </p>
+      </div>
+      <!-- fin panneau intro -->
+
+      <!-- panneau d'options à superposer au canvas -->
+      <div id="optionsDialog" class="dialogue" title="Option de jeu">
+        <!--
+        <h1>Choisissez la langue du jeu</h1>
+        <p>
+        Locale
+        &nbsp;
+        <select id="localeSelector">
+        <option value="fr" selected>Français&nbsp;</option>
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+        </select>
+        </p>
+        -->
+        <p>
+          <h1>Emplico : options</h1>
+        </p>  
+        <p>
+          Difficulté
+          &nbsp;
+          <select id="difficultySelector">
+          <option value="1">1&nbsp;</option>
+          <option value="2" selected>2</option>
+          </select>  
+        </p>
+        <p>
+          Taille du plateau
+          &nbsp;
+          <select id="sizeSelector">
+          <option value="2"> 2  x  2&nbsp;</option>
+          <option value="4" selected> 4  x  4</option>
+          <option value="6" > 6  x  6</option>
+          <option value="8" > 8 x  8</option>
+          <option value="12">12 x 12</option>
+          </select>  
+        </p>
+        
+        <p>&nbsp;</p>
+        
+        <p>
+          <a id="validateOptnBtn" class="button" href="#">OK</a>
+        </p>
+      </div>
+      <!-- fin option-->
+      
+      <!-- dialog modal des regles du jeu -->
+      <div id="rulesDialog" class="dialogue" title="Règles du jeu">
+        <p>
+          <h1>Emplico : les règles</h1>
+        </p>
+        <p>
+          <ul>
+          <li>Le but est d'atteindre le premier "le score à battre" (la moitié des points sur le damier).</li>
+          <li>L'ordinateur joue le premier.</li>
+          <li>Jouez une case sur la même colonne ou même ligne que la dernière case jouée par l'adversaire.</li>
+          <li>La partie est terminée dès que le score à battre est obtenu.</li>
+          <li>Le vainqueur rejoue en premier à la partie suivante.</li>
+          <li>Le jeu est déclaré bloqué quand il n'y a plus de cases jouables. En cas de blocage, le joueur ayant le plus haut score joue en premier à la partie suivante.</li>
+          </ul>
+        </p>
+        <h1>Les options</h1>
+        <p>
+          <ul>
+          <li>La taille du jeu, 6 par 6 ou 8 par 8 sont des bons choix.</li>
+          <li>Difficulté 1 (adversaire débutant) ou 2 (adversaire intelligent).</li>
+          </ul>
+        </p>
+        <h1>Les tactiques</h1>
+        <p>
+          <ul>
+          <li>Une tactique est de ne jouer de cases donnant accès à des '9'.</li>
+          <li>Une autre tactique est de ne jouer les cases ne donnant accès qu'à des cases de valeurs inférieures.</li>
+          <li>Et il y a d'autres tactiques...</li>
+          </ul>
+        </p>
+        
+         <p>&nbsp;</p>
+        
+        <p>
+        <a id="okRulzBtn" class="button" href="#">OK</a>
+        </p>
+      </div>  
+      <!-- fin rules -->
+    
+    </div>
+    <!-- fin gameUI -->
+        
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+
+    <!-- score en dessous du canvas -->
+    <div id="scoreBoard" class="dialogue">
+      <p>
+      <h1 class="boardStatus"></h1>
+      </p>
+        <ul class="aplati">
+          <li class="texte">Joueur</li>
+          <li id="humanScore" class="points">xx</li>
+          <li class="texte">Ordi.</li>
+          <li id="computerScore" class="points">xx</li>
+          <li class="texte">A battre</li>
+          <li id="victoryScore" class="points">xx</li>
+        </ul>
+      </p>
+       <p><span class="boardMessage">...</span></p>
+       <p>&nbsp;</p>
+      <p>
+      <a id="exitBtn" class="button" href="#">Quitter</a>
+      <a id="replayBtn" class="button" href="#">Recommencer</a>
+      </p>
+  </div>
+
+    
+
+
+  </div>  <!--fin game -->
+
+
+</body>
+</html>

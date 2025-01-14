@@ -1,0 +1,167 @@
+* { margin: 0; padding: 0; }
+
+html, body { 
+  height: 100%; 
+  width: 100%; 
+}
+
+canvas { 
+  display: block; 
+}
+
+/* body avec background in light blue, texte en bleu */
+body {
+  background: #fff;  
+  color: #006;
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 14px;
+}
+
+/* titre h1 en orange par défaut*/
+h1 {
+  font-size: 22px;
+  color: #c63;   /* h1 text in orange */
+}
+
+/* couleur rouhe pour 'vous avez perdu '*/
+.lostStatus {
+  color: #f00;
+}
+/* couleur bleu pour "c'est gagné" */ 
+.wonStatus {
+  color: #00f;
+}
+/*status dans scoreBoard*/
+span.boardStatus{
+  font-size: 22px;
+  color: #c63;   
+}
+
+
+
+/* margin top and bottom of 20px */
+p {
+  margin-top: 0px;
+  margin-bottom: 15px; 
+}
+
+/* lien sans décoration */
+a {
+  color: #006;
+  text-decoration: none;
+}
+
+/* lien souligné en rollover*/
+a:hover {
+  text-decoration: underline;
+}
+
+/* lien transformé en bouton */
+a.button {
+  color: #fff;
+  background: #336699;
+  border-radius: 5px;
+  /*display: block;*/
+  font-size: 16px;
+  font-weight:bold;
+  margin: 10px 10px 10px 10px;
+  padding: 10px;
+  width: 120px;
+  text-align: center;
+  border-bottom: 2px dotted white;
+  border-right: 2px dotted white;
+}
+
+/* lien bouton survolé */
+a.button:hover {
+  background: #39c;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* un peu de marge dans les dialogues */
+.dialogue {
+  padding-left: 10px;
+  margin-left:  10px;
+  padding-right: 5px;
+  margin-right:  5px;
+}
+
+
+/* un div 'game' de 400 x 600, 20 du haut, centré */
+#game {
+  background: #9cf;
+  width: 400px;
+  height: 640px;
+  display: block;
+  margin-left: auto ;
+  margin-right: auto ;
+  margin-top: 20px ;
+}
+
+/* couleur de fond pour canvas */
+#gameCanvas {
+  background: #9cf;
+}
+
+/* Places UI on top of the canvas */
+#gameUI {
+  height: 640px; 
+  position: absolute; 
+  width: 400px;
+}
+
+#introDialog {
+  text-align: center;
+} 
+
+/* style pour liste ul aplati (présentation des scores */
+
+.boardMessage {
+  font-size: 8px; 
+  font-family: Courrier, Verdana;
+  color: #000; 
+}
+
+ul.aplati { 
+  margin:0 auto; 
+  padding:0px; 
+  list-style:none; 
+  border:2px outset red;
+}
+
+
+ul.aplati li  { 
+  display: inline; 
+  font-size: 16px; 
+  font-family: Courrier, Verdana;
+  color: #000; 
+}
+
+ul.aplati li.status { 
+  font-size: 16px;
+  color: #c63;   /* h1 text in orange */
+  font-weight: bold; 
+}
+
+ul.aplati li.points { 
+  font-weight: bold; 
+  text-shadow:0 0 5px #00c6ff; 
+}
+
+li#humanScore{
+  color: #00f;
+}
+
+li#computerScore{
+  color: #f00;
+  font-family: Courrier, Verdana;
+}
+
+li#victoryScore{
+  color: #c63;
+  font-family: Courrier, Verdana;   
+}
+
+/* */
+  
